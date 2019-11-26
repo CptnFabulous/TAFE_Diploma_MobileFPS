@@ -57,7 +57,8 @@ public class PlayerController : MonoBehaviour
     }
     #endif
     #endregion
-
+	
+	/*
     bool IsGrounded()
     {
         isGrounded.origin = transform.position; // Sets the origin of isGrounded ray to the player's body
@@ -68,7 +69,8 @@ public class PlayerController : MonoBehaviour
         }
         return false;
     }
-
+	*/
+	
     // Use this for initialization
     void Awake()
     {
@@ -86,6 +88,15 @@ public class PlayerController : MonoBehaviour
 			useTouchControls = true;
 		}
 		*/
+		
+		if (cameraInput != null)
+		{
+			cameraInput.gameObject.SetActive(useTouchControls);
+		}
+		if (movementInput != null)
+		{
+			movementInput.gameObject.SetActive(useTouchControls);
+		}
 		
 		#region Camera
 		if (useTouchControls == true)
