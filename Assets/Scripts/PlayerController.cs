@@ -15,8 +15,10 @@ public class PlayerController : MonoBehaviour
     CapsuleCollider cc;
     Ray isGrounded;
     RaycastHit floor;
-    public MobileInputs mi;
-
+    public Joystick cameraInput;
+	public Joystick movementInput;
+	public bool useTouchControls;
+	
     [Header("Camera control")]
     public Camera playerCamera;
     [Range(0, 180)]
@@ -41,27 +43,8 @@ public class PlayerController : MonoBehaviour
     [Header("Standard Movement")]
     [Tooltip("The player's standard movement speed.")]
     public float movementSpeed = 10;
-    [Range(-1, 0)]
-    public float crouchSpeedMultiplier = -0.5f;
-    public float forceJump = 5;
-    public float jumpDelay = 0.1f;
-
-    float speed;
-
     Vector2 moveInput;
     Vector3 movementValue;
-    bool willJump;
-    float jumpTimer = 9999999;
-
-    [Header("Crouching")]
-    public float standHeight = 2;
-    public float crouchHeight = 1;
-    public float crouchTime = 0.25f;
-    [Range(-1, 1)]
-    public float relativeHeadHeight = 0.375f;
-    public bool toggleCrouch;
-    float crouchTimer;
-    bool isCrouching;
 
     #region Validate variables
     #if UNITY_EDITOR
@@ -71,15 +54,6 @@ public class PlayerController : MonoBehaviour
 
         minLookAngle = Mathf.Clamp(minLookAngle, -90, maxLookAngle);
         maxLookAngle = Mathf.Clamp(maxLookAngle, minLookAngle, 90);
-
-        if (isCrouching == true)
-        {
-            head.transform.localPosition = new Vector3(0, relativeHeadHeight * crouchHeight, 0);
-        }
-        else
-        {
-            head.transform.localPosition = new Vector3(0, relativeHeadHeight * standHeight, 0);
-        }
     }
     #endif
     #endregion
@@ -105,44 +79,48 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        #region Camera
-        LookAngle(new Vector2(Input.GetAxis("MouseX") * sensitivityX * Time.deltaTime, Input.GetAxis("MouseY") * sensitivityY * Time.deltaTime));
-        #endregion
+        //bool useTouchControls = false;
+		/*
+		if ((cameraInput != null && cameraInput.Direction != Vector2.zero) || (movementInput != null && movementInput.Direction != Vector2.zero))
+		{
+			useTouchControls = true;
+		}
+		*/
+		
+		#region Camera
+		if (useTouchControls == true)
+		{
+			LookAngle(new Vector2(cameraInput.Direction.x * sensitivityX * Time.deltaTime, cameraInput.Direction.y * sensitivityY * Time.deltaTime));
+		}
+		else
+		{
+			LookAngle(new Vector2(Input.GetAxis("Mouse X") * sensitivityX * Time.deltaTime, Input.GetAxis("Mouse Y") * sensitivityY * Time.deltaTime));
+		}
 
-        #region Crouching
-        HoldOrToggleCrouch();
-        if (isCrouching)
-        {
-            LerpCrouch(crouchTime);
-        }
-        else
-        {
-            LerpCrouch(-crouchTime);
-        }
+		
         
         #endregion
-
+		
         #region Movement
-        moveInput.x = Input.GetAxis("Horizontal"); // Set to AD keys or analog stick.
-        moveInput.y = Input.GetAxis("Vertical"); // Set to WS keys or analog stick.
+		
+		if (useTouchControls == true)
+		{
+			moveInput = movementInput.Direction;
+		}
+		else
+		{
+			moveInput.x = Input.GetAxis("Horizontal"); // Set to AD keys or analog stick.
+            moveInput.y = Input.GetAxis("Vertical"); // Set to WS keys or analog stick.
+		}
+		
         if (moveInput.magnitude > 1)
         {
             moveInput.Normalize();
         }
-        movementValue = new Vector3(moveInput.x * speed, 0, moveInput.y * speed); // X and Y values of Vector2 moveInput are set as X and Z values of Vector3 movementValue, turning horizontal and vertical values into horizontal and lateral ones.
-        movementValue = transform.rotation * movementValue; // movementValue is multiplied by transform.rotation so moveInput occurs in the direction the character is facing.
-        #endregion
-
-        #region Jumping
-        jumpTimer += Time.deltaTime;
-        if (Input.GetButtonDown("Jump") && jumpTimer >= jumpDelay && IsGrounded() == true) //Raycast isGrounded is cast to detect if there is a surface underneath the player. If so, canJump boolean is enabled to allow the player to jump off the surface, and disabled if false, i.e. if the player is in midair.
-        {
-            if (isCrouching == true)
-            {
-                isCrouching = false;
-            }
-            willJump = true;
-        }
+		print(moveInput);
+        movementValue = new Vector3(moveInput.x * movementSpeed, 0, moveInput.y * movementSpeed); // X and Y values of Vector2 moveInput are set as X and Z values of Vector3 movementValue, turning horizontal and vertical values into horizontal and lateral ones.
+        //print(movementValue);
+		movementValue = transform.rotation * movementValue; // movementValue is multiplied by transform.rotation so moveInput occurs in the direction the character is facing.
         #endregion
     }
 
@@ -155,49 +133,9 @@ public class PlayerController : MonoBehaviour
         head.transform.localRotation = Quaternion.Euler(lookVector.y, 0, 0); // Player head is rotated in x axis based on Camera.y, for looking up and down
     }
 
-    #region Crouch functions
-    void HoldOrToggleCrouch()
-    {
-        if (toggleCrouch == true)
-        {
-            if (Input.GetButtonDown("Crouch"))
-            {
-                isCrouching = !isCrouching;
-            }
-        }
-        else
-        {
-            if (Input.GetButton("Crouch"))
-            {
-                isCrouching = true;
-            }
-            else
-            {
-                isCrouching = false;
-            }
-        }
-    }
-
-    void LerpCrouch(float t) // LERP CODE IS SCREWY AND DOESN'T ROUND VALUES PROPERLY
-    {
-        crouchTimer += Time.deltaTime / t;
-        crouchTimer = Mathf.Clamp01(crouchTimer);
-        cc.height = Mathf.Lerp(standHeight, crouchHeight, crouchTimer);
-        speed = Mathf.Lerp(movementSpeed, movementSpeed * -crouchSpeedMultiplier, crouchTimer);
-        head.transform.localPosition = new Vector3(0, Mathf.Lerp(relativeHeadHeight * standHeight, relativeHeadHeight * crouchHeight, crouchTimer), 0);
-    }
-    #endregion
-
     void FixedUpdate()
     {
         rb.MovePosition(transform.position + movementValue * Time.fixedDeltaTime);
-
-        if (willJump)
-        {
-            rb.velocity += transform.up * forceJump;
-            willJump = false;
-            jumpTimer = 0;
-        }
 
         rb.AddForce(Physics.gravity * rb.mass);
     }
