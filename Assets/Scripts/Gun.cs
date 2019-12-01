@@ -14,28 +14,25 @@ public class Gun : MonoBehaviour
 	public LayerMask hitDetection;
 	RaycastHit rh;
 	
+    /*
 	// Start is called before the first frame update
     void Start()
     {
         
     }
+    */
 
     // Update is called once per frame
     void Update()
     {
         fireTimer += Time.deltaTime;
 		
-		if (Physics.Raycast(transform.position, transform.forward, out rh, range, hitDetection))
+		if (Physics.Raycast(transform.position, transform.forward, out rh, range, hitDetection)) // Shoots raycast forward to check for objects the player is looking at
 		{
-			if (rh.collider.gameObject.CompareTag("Shootable") && fireTimer >= 60 / roundsPerMinute)
+			if (rh.collider.gameObject.CompareTag("Shootable") && fireTimer >= 60 / roundsPerMinute) // If object player is looking at is something that can be shot at, and previous shot has finished firing
 			{
-				
-				fireTimer = 0;
-				
-				
-				
-				//Quaternion bulletDirection = Quaternion.LookRotation(rh.point - muzzle.position, Vector3.up);
-				//GameObject bullet = Instantiate(bulletPrefab.gameObject, muzzle.position, bulletDirection);
+                // Shoot bullet and reset fire timer
+                fireTimer = 0;
 				GameObject bullet = Instantiate(bulletPrefab.gameObject, muzzle.position, Quaternion.identity);
 				bullet.transform.LookAt(rh.point);
 				

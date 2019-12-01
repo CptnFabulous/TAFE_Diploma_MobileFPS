@@ -8,8 +8,6 @@ using UnityEngine.UI;
 [RequireComponent(typeof(CapsuleCollider))]
 public class PlayerController : MonoBehaviour
 {
-    
-
     [Header("References")]
     Rigidbody rb;
     CapsuleCollider cc;
@@ -17,7 +15,7 @@ public class PlayerController : MonoBehaviour
     RaycastHit floor;
     public Joystick cameraInput;
 	public Joystick movementInput;
-	public bool useTouchControls;
+	public bool useTouchControls; // Determines whether the player is using touch controls or a keyboard and mouse.
 	
     [Header("Camera control")]
     public Camera playerCamera;
@@ -81,15 +79,13 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //bool useTouchControls = false;
-		/*
-		if ((cameraInput != null && cameraInput.Direction != Vector2.zero) || (movementInput != null && movementInput.Direction != Vector2.zero))
-		{
-			useTouchControls = true;
-		}
-		*/
-		
-		if (cameraInput != null)
+        if (Input.GetButtonDown("ToggleInputMethod"))
+        {
+            useTouchControls = !useTouchControls;
+        }
+        
+        // Enable/disable touch controls based on whether the player is using them or not
+        if (cameraInput != null)
 		{
 			cameraInput.gameObject.SetActive(useTouchControls);
 		}
@@ -99,6 +95,7 @@ public class PlayerController : MonoBehaviour
 		}
 		
 		#region Camera
+        // Move camera based on input from mouse or touch controls, depending on which are enabled.
 		if (useTouchControls == true)
 		{
 			LookAngle(new Vector2(cameraInput.Direction.x * sensitivityX * Time.deltaTime, cameraInput.Direction.y * sensitivityY * Time.deltaTime));
@@ -114,6 +111,7 @@ public class PlayerController : MonoBehaviour
 		
         #region Movement
 		
+        // Obtains movement input from keyboard or touch controls, depending on which one the player has selected.
 		if (useTouchControls == true)
 		{
 			moveInput = movementInput.Direction;
@@ -124,11 +122,12 @@ public class PlayerController : MonoBehaviour
             moveInput.y = Input.GetAxis("Vertical"); // Set to WS keys or analog stick.
 		}
 		
+        // Normalises input if above a magnitude of 1, to prevent the player from moving extremely fast in a diagonal direction if inputs from two different axes are applied simultaneously.
         if (moveInput.magnitude > 1)
         {
             moveInput.Normalize();
         }
-		print(moveInput);
+		//print(moveInput);
         movementValue = new Vector3(moveInput.x * movementSpeed, 0, moveInput.y * movementSpeed); // X and Y values of Vector2 moveInput are set as X and Z values of Vector3 movementValue, turning horizontal and vertical values into horizontal and lateral ones.
         //print(movementValue);
 		movementValue = transform.rotation * movementValue; // movementValue is multiplied by transform.rotation so moveInput occurs in the direction the character is facing.
@@ -137,6 +136,7 @@ public class PlayerController : MonoBehaviour
 
     public void LookAngle(Vector2 cameraInput) // This variable is public so it can be altered by other sources such as gun recoil
     {
+        // Input variables are placed into a separate Vector2, as the player's horizontal rotation can be directly added or subtracted, but their vertical rotation must be set directly to a value. So lookVector.y has to consist of the player's current vertical look angle minus any new Y input given.
         lookVector.x = cameraInput.x;
         lookVector.y -= cameraInput.y;
         lookVector.y = Mathf.Clamp(lookVector.y, minLookAngle, maxLookAngle); // Camera.y is then clamped to ensure it does not move past 90* or 90*, ensuring that the player does not flip the camera over completely.
@@ -146,8 +146,8 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        rb.MovePosition(transform.position + movementValue * Time.fixedDeltaTime);
+        rb.MovePosition(transform.position + movementValue * Time.fixedDeltaTime); // The rigidbody is moved based on movementValue.
 
-        rb.AddForce(Physics.gravity * rb.mass);
+        rb.AddForce(Physics.gravity * rb.mass); // Gravity is applied to the player, otherwise they fall too slowly.
     }
 }

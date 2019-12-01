@@ -95,3 +95,5 @@ MonoBehaviour:
   hitDetection:
     serializedVersion: 2
     m_Bits: 4294967295
+  impactPrefab: {fileID: 2123855640293138811, guid: 6b8007166e0d3f94898409fc2d586769,
+    type: 3}
